@@ -11,3 +11,4 @@ se añade una nueva que la sustituye y se marca la antigua como "Sustituida por 
 | [0003](0003-event-schema-floor-and-two-stage-fall.md) | Planta en la ubicación del evento y caída en dos eventos | Aceptada |
 | [0004](0004-escalation-policy.md) | Política de escalado | Aceptada |
 | [0005](0005-development-environment.md) | Entorno de desarrollo: Docker Desktop con WSL2, fuera de OneDrive | Aceptada |
+| [0006](0006-fall-false-alarm.md) | Falsa alarma del detector de caídas | Aceptada |

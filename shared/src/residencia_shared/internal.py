@@ -22,6 +22,8 @@ INCIDENT_ID_PATTERN = r"^inc_[a-z0-9]+$"
 
 class IncidentStatus(StrEnum):
     OPEN = "open"  # avisando a cuidadores, nadie lo ha aceptado aún
+    # El módulo lo ha marcado como falsa alarma: no escala, pero un cuidador debe revisarlo.
+    PENDING_REVIEW = "pending_review"
     ACCEPTED = "accepted"  # un cuidador ha dicho "yo me encargo"
     RESOLVED = "resolved"
 
@@ -36,6 +38,7 @@ class UpdateReason(StrEnum):
     CREATED = "created"
     EVENT_ADDED = "event_added"
     PRIORITY_RAISED = "priority_raised"
+    DISMISSED = "dismissed"  # falsa alarma: baja prioridad, sin escalado, pendiente de revisión
     ESCALATED = "escalated"
     ACCEPTED = "accepted"
     RESOLVED = "resolved"

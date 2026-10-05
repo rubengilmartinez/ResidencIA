@@ -179,7 +179,8 @@ def create_app(
         incident = board.get(incident_id)
         if incident is None or incident.status is IncidentStatus.RESOLVED:
             raise HTTPException(status_code=404, detail="unknown or resolved incident")
-        if kind is CaregiverActionType.ACCEPT and incident.status is not IncidentStatus.OPEN:
+        # Se puede aceptar un incidente abierto o pendiente de revisión (falsa alarma).
+        if kind is CaregiverActionType.ACCEPT and incident.status is IncidentStatus.ACCEPTED:
             raise HTTPException(
                 status_code=409, detail=f"incident already accepted by {incident.accepted_by}"
             )

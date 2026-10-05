@@ -14,6 +14,14 @@ Política de escalado (ver docs/decisions/0004-escalation-policy.md):
   desde el mismo inicio de etapa, así que puede vencer en ese mismo instante.
 - Una etapa que no añade a nadie nuevo se salta.
 - Aceptar detiene el escalado. Solo cuenta la primera aceptación.
+
+Falsa alarma (ver docs/decisions/0006-fall-false-alarm.md):
+
+- Un evento de retirada (``fall_dismissed``) nunca abre un incidente.
+- Sobre un incidente no crítico: baja a prioridad baja, deja de escalar y queda pendiente de
+  revisión por un cuidador (``pending_review``), que es quien lo cierra.
+- Sobre un incidente crítico (caída confirmada): solo se informa; sigue crítico y escalando.
+- Si después llega otra alerta de más prioridad, el incidente vuelve a escalar.
 """
 
 from __future__ import annotations
@@ -23,7 +31,7 @@ from collections.abc import Iterable
 from datetime import datetime, timedelta
 
 from residencia_shared.config import SystemConfig
-from residencia_shared.events import Event, ensure_utc, new_id
+from residencia_shared.events import Event, Severity, ensure_utc, new_id
 from residencia_shared.internal import (
     CaregiverAction,
     CaregiverActionType,
@@ -34,7 +42,7 @@ from residencia_shared.internal import (
     UpdateReason,
 )
 
-from orchestrator.rules import describe, rule_for
+from orchestrator.rules import RECOVERY_NOTE, RuleKind, describe, rule_for
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +87,7 @@ class IncidentEngine:
 
     @property
     def active_incidents(self) -> list[Incident]:
-        """Incidentes no resueltos (abiertos o aceptados)."""
+        """Incidentes no resueltos (abiertos, pendientes de revisión o aceptados)."""
         return list(self._incidents.values())
 
     # --- Eventos ------------------------------------------------------------------------
@@ -94,6 +102,15 @@ class IncidentEngine:
 
         rule = rule_for(event.event_type)
         incident = self._find_fusable(event, rule.category, now)
+        if rule.kind is RuleKind.DISMISSAL:
+            if incident is None:
+                # Retirada sin incidente al que aplicarse (llega tarde o ya está resuelto).
+                logger.info(
+                    "dismissal_without_incident",
+                    extra={"event_id": event.event_id, "zone_id": event.location.zone_id},
+                )
+                return []
+            return [self._dismiss(incident, event, now)]
         if incident is None:
             return [self._create(event, now)]
         return self._merge(incident, event, now)
@@ -146,19 +163,46 @@ class IncidentEngine:
 
     def _merge(self, incident: Incident, event: Event, now: datetime) -> list[IncidentUpdate]:
         rule = rule_for(event.event_type)
-        incident.event_ids.append(event.event_id)
-        incident.last_event_at = now
-        incident.last_event_type = event.event_type
+        self._record_event(incident, event, now)
         reason = UpdateReason.EVENT_ADDED
         if rule.priority.rank > incident.priority.rank:
             incident.priority = rule.priority
             incident.title, incident.message = self._describe(event)
+            if incident.status is IncidentStatus.PENDING_REVIEW:
+                # Nueva alerta tras una falsa alarma: vuelve a escalar.
+                incident.status = IncidentStatus.OPEN
             reason = UpdateReason.PRIORITY_RAISED
         self._touch(incident, now)
         updates = [self._update(incident, reason, [], now)]
         # Con más prioridad el plazo de la etapa actual es más corto y puede haber vencido ya.
         updates.extend(self._escalate_if_due(incident, now))
         return updates
+
+    def _dismiss(self, incident: Incident, event: Event, now: datetime) -> IncidentUpdate:
+        """Aplica una falsa alarma del módulo a un incidente existente."""
+        self._record_event(incident, event, now)
+        if incident.priority is Severity.CRITICAL:
+            # Una caída confirmada (hubo inmovilidad) no se anula: solo se informa.
+            if RECOVERY_NOTE not in incident.message:
+                incident.message = f"{incident.message} {RECOVERY_NOTE}"
+            reason = UpdateReason.EVENT_ADDED
+        else:
+            changed = (
+                incident.priority is not Severity.LOW or incident.status is IncidentStatus.OPEN
+            )
+            incident.priority = rule_for(event.event_type).priority
+            incident.title, incident.message = self._describe(event)
+            if incident.status is IncidentStatus.OPEN:
+                incident.status = IncidentStatus.PENDING_REVIEW
+            reason = UpdateReason.DISMISSED if changed else UpdateReason.EVENT_ADDED
+        self._touch(incident, now)
+        return self._update(incident, reason, [], now)
+
+    @staticmethod
+    def _record_event(incident: Incident, event: Event, now: datetime) -> None:
+        incident.event_ids.append(event.event_id)
+        incident.last_event_at = now
+        incident.last_event_type = event.event_type
 
     def _describe(self, event: Event) -> tuple[str, str]:
         residence = self._config.residence
@@ -226,7 +270,7 @@ class IncidentEngine:
             )
 
         if action.action is CaregiverActionType.ACCEPT:
-            if incident.status is not IncidentStatus.OPEN:
+            if incident.status not in (IncidentStatus.OPEN, IncidentStatus.PENDING_REVIEW):
                 raise ActionRejectedError(
                     ActionRejectedError.NOT_OPEN,
                     f"incident {incident.incident_id!r} already accepted by "

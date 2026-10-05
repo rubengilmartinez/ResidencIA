@@ -187,6 +187,38 @@ def test_malformed_messages_are_dropped_and_service_keeps_working(
         residence.resolve_all("comedor")
 
 
+def test_false_alarm_stops_escalation_and_asks_for_review(
+    sut: SystemUnderTest, residence: Residence
+) -> None:
+    zone = "sala_estar"
+    zone_staff = expected_stages(sut, zone)[0]
+    [caregiver] = residence.caregivers(zone_staff[:1])
+    try:
+        residence.publish(EventType.FALL_SUSPECTED, zone)
+        created = caregiver.wait_for(update_matches(zone, reason="created"), what="created")
+        incident_id = created["data"]["incident"]["incident_id"]
+
+        residence.publish(EventType.FALL_DISMISSED, zone, reason="person_recovered")
+        dismissed = caregiver.wait_for(
+            update_matches(incident_id=incident_id, reason="dismissed"), what="dismissed"
+        )
+        incident = dismissed["data"]["incident"]
+        assert incident["status"] == "pending_review"
+        assert incident["priority"] == "low"
+
+        # Ya no escala aunque pasen todos los plazos, pero sigue visible para revisarlo.
+        later = caregiver.drain(4.0)
+        assert not any(m["data"]["reason"] == "escalated" for m in later), later
+        [active] = residence.active_incidents(zone)
+        assert active["status"] == "pending_review"
+
+        assert residence.resolve(incident_id, caregiver.staff_id).status_code == 202
+        caregiver.wait_for(update_matches(incident_id=incident_id, status="resolved"))
+    finally:
+        caregiver.close()
+        residence.resolve_all(zone)
+
+
 def test_orchestrator_restart_resumes_open_incidents(
     sut: SystemUnderTest, residence: Residence
 ) -> None:

@@ -8,22 +8,40 @@ responda o no el LLM (que nunca está en este camino).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from residencia_shared.events import Event, EventType, Severity
+
+
+class RuleKind(StrEnum):
+    # Abre un incidente o se fusiona con uno abierto de la misma categoría y zona.
+    ALERT = "alert"
+    # El módulo retira su sospecha (falsa alarma). Nunca abre incidentes ni rebaja uno
+    # crítico; ver docs/decisions/0006-fall-false-alarm.md.
+    DISMISSAL = "dismissal"
 
 
 @dataclass(frozen=True)
 class EventRule:
     # Los eventos de la misma categoría y zona se fusionan en un único incidente.
     category: str
+    # En una retirada (DISMISSAL), prioridad a la que baja el incidente no crítico.
     priority: Severity
     title: str
+    kind: RuleKind = RuleKind.ALERT
 
 
 RULES: dict[EventType, EventRule] = {
     EventType.FALL_SUSPECTED: EventRule("fall", Severity.HIGH, "Posible caída"),
     EventType.FALL_CONFIRMED: EventRule("fall", Severity.CRITICAL, "Caída confirmada"),
+    EventType.FALL_DISMISSED: EventRule(
+        "fall", Severity.LOW, "Revisar posible caída", kind=RuleKind.DISMISSAL
+    ),
 }
+
+# Nota que se añade a un incidente crítico cuando el detector informa de que la persona se ha
+# levantado: el incidente sigue siendo crítico.
+RECOVERY_NOTE = "El detector indica que la persona se ha levantado."
 
 
 def rule_for(event_type: EventType) -> EventRule:
@@ -38,4 +56,6 @@ def describe(event: Event, zone_name: str, floor_name: str) -> tuple[str, str]:
     immobile = event.payload.get("immobile_seconds")
     if event.event_type is EventType.FALL_CONFIRMED and isinstance(immobile, int | float):
         message += f" Sin movimiento desde hace {immobile:.0f} s."
+    if event.event_type is EventType.FALL_DISMISSED:
+        message += f" {RECOVERY_NOTE} Compruébalo cuando puedas."
     return title, message

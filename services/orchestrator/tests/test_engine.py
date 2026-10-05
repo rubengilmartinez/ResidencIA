@@ -408,3 +408,132 @@ def test_snapshot_republishes_state_without_bumping_versions(
     assert snapshot.reason is UpdateReason.RESTORED
     assert snapshot.incident.version == created.incident.version
     assert snapshot.new_recipients == []
+
+
+# --- Falsa alarma (docs/decisions/0006) ----------------------------------------------------
+
+
+def test_false_alarm_stops_escalation_and_asks_for_review(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    created = only(engine.handle_event(make_event(EventType.FALL_SUSPECTED, at=day), day))
+    t = day + s(5)
+    update = only(engine.handle_event(make_event(EventType.FALL_DISMISSED, at=t), t))
+    inc = update.incident
+    assert update.reason is UpdateReason.DISMISSED
+    assert inc.incident_id == created.incident.incident_id
+    assert inc.status is IncidentStatus.PENDING_REVIEW
+    assert inc.priority is Severity.LOW
+    assert inc.title == "Revisar posible caída"
+    assert "se ha levantado" in inc.message
+    # Los ya avisados siguen viendo el incidente; no se avisa a nadie nuevo.
+    assert inc.notified == ["cuid_d4"]
+    assert update.new_recipients == []
+    # No escala nunca, pero sigue activo hasta que un cuidador lo cierre.
+    assert engine.tick(day + s(3600)) == []
+    assert [i.incident_id for i in engine.active_incidents] == [inc.incident_id]
+
+
+def test_false_alarm_does_not_cancel_a_confirmed_fall(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(EventType.FALL_SUSPECTED, at=day), day)
+    engine.handle_event(make_event(EventType.FALL_CONFIRMED, at=day + s(2)), day + s(2))
+    t = day + s(5)
+    update = only(engine.handle_event(make_event(EventType.FALL_DISMISSED, at=t), t))
+    inc = update.incident
+    assert update.reason is UpdateReason.EVENT_ADDED
+    assert inc.status is IncidentStatus.OPEN
+    assert inc.priority is Severity.CRITICAL
+    assert inc.title == "Caída confirmada"
+    assert inc.message.endswith("El detector indica que la persona se ha levantado.")
+    # Sigue escalando con el plazo crítico (10 s desde la creación).
+    assert only(engine.tick(day + s(10))).incident.stage is EscalationStage.FLOOR
+
+
+def test_repeated_false_alarm_on_confirmed_fall_adds_the_note_once(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(EventType.FALL_CONFIRMED, at=day), day)
+    for offset in (3, 6):
+        t = day + s(offset)
+        engine.handle_event(make_event(EventType.FALL_DISMISSED, at=t), t)
+    assert engine.active_incidents[0].message.count("se ha levantado") == 1
+
+
+def test_false_alarm_on_accepted_incident_keeps_it_accepted(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    inc_id = only(engine.handle_event(make_event(at=day), day)).incident.incident_id
+    engine.handle_action(action(inc_id, "cuid_d4", CaregiverActionType.ACCEPT, day), day + s(2))
+    t = day + s(5)
+    update = only(engine.handle_event(make_event(EventType.FALL_DISMISSED, at=t), t))
+    assert update.reason is UpdateReason.DISMISSED
+    assert update.incident.status is IncidentStatus.ACCEPTED
+    assert update.incident.accepted_by == "cuid_d4"
+    assert update.incident.priority is Severity.LOW
+
+
+def test_false_alarm_never_opens_an_incident(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    assert engine.handle_event(make_event(EventType.FALL_DISMISSED, at=day), day) == []
+    assert engine.active_incidents == []
+
+
+def test_false_alarm_outside_fusion_window_is_ignored(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(EventType.FALL_SUSPECTED, at=day), day)
+    late = day + FUSION_WINDOW + s(1)
+    assert engine.handle_event(make_event(EventType.FALL_DISMISSED, at=late), late) == []
+    assert engine.active_incidents[0].status is IncidentStatus.OPEN
+
+
+def test_false_alarm_in_another_zone_does_not_affect_the_incident(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(EventType.FALL_SUSPECTED, "hab_12", at=day), day)
+    t = day + s(3)
+    assert engine.handle_event(make_event(EventType.FALL_DISMISSED, "hab_13", at=t), t) == []
+    assert engine.active_incidents[0].status is IncidentStatus.OPEN
+
+
+def test_pending_review_can_be_accepted_and_resolved(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    inc_id = only(engine.handle_event(make_event(at=day), day)).incident.incident_id
+    engine.handle_event(make_event(EventType.FALL_DISMISSED, at=day + s(4)), day + s(4))
+    accept = action(inc_id, "cuid_d4", CaregiverActionType.ACCEPT, day)
+    accepted = only(engine.handle_action(accept, day + s(60)))
+    assert accepted.incident.status is IncidentStatus.ACCEPTED
+    resolve = action(inc_id, "cuid_d4", CaregiverActionType.RESOLVE, day)
+    resolved = only(engine.handle_action(resolve, day + s(120)))
+    assert resolved.incident.status is IncidentStatus.RESOLVED
+    assert engine.active_incidents == []
+
+
+def test_new_fall_after_false_alarm_resumes_escalation(
+    engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(EventType.FALL_SUSPECTED, at=day), day)
+    engine.handle_event(make_event(EventType.FALL_DISMISSED, at=day + s(5)), day + s(5))
+    t = day + s(20)
+    updates = engine.handle_event(make_event(EventType.FALL_CONFIRMED, at=t), t)
+    # Vuelve a estar abierto y crítico; el plazo de zona (10 s) ya ha vencido: escala ya.
+    assert [u.reason for u in updates] == [UpdateReason.PRIORITY_RAISED, UpdateReason.ESCALATED]
+    assert updates[0].incident.status is IncidentStatus.OPEN
+    assert updates[0].incident.priority is Severity.CRITICAL
+    assert updates[1].incident.stage is EscalationStage.FLOOR
+
+
+def test_restored_pending_review_incident_does_not_escalate(
+    system_config: SystemConfig, engine: IncidentEngine, make_event: EventFactory, day: datetime
+) -> None:
+    engine.handle_event(make_event(at=day), day)
+    dismissed = only(
+        engine.handle_event(make_event(EventType.FALL_DISMISSED, at=day + s(4)), day + s(4))
+    )
+    restored = IncidentEngine(system_config, FUSION_WINDOW, [dismissed.incident])
+    assert restored.tick(day + s(3600)) == []
+    assert restored.active_incidents[0].status is IncidentStatus.PENDING_REVIEW

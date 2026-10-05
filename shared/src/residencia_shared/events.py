@@ -69,14 +69,18 @@ class Source(StrEnum):
 
 class EventType(StrEnum):
     # Detector de caídas: primero la sospecha y, tras comprobar la inmovilidad, la confirmación.
+    # Si la persona se levanta antes de confirmarse, el detector lo comunica como falsa alarma
+    # (docs/decisions/0006-fall-false-alarm.md).
     FALL_SUSPECTED = "fall_suspected"
     FALL_CONFIRMED = "fall_confirmed"
+    FALL_DISMISSED = "fall_dismissed"
 
 
 # Qué módulo puede emitir cada tipo de evento. Se amplía al diseñar cada módulo nuevo.
 EVENT_TYPE_SOURCE: dict[EventType, Source] = {
     EventType.FALL_SUSPECTED: Source.FALL_DETECTOR,
     EventType.FALL_CONFIRMED: Source.FALL_DETECTOR,
+    EventType.FALL_DISMISSED: Source.FALL_DETECTOR,
 }
 
 

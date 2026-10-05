@@ -160,6 +160,15 @@ def test_resolve_accepted_incident(client: TestClient, bridge: FakeBridge) -> No
     assert bridge.actions[0].action is CaregiverActionType.RESOLVE
 
 
+def test_pending_review_incident_can_be_accepted(client: TestClient, bridge: FakeBridge) -> None:
+    push(client, make_update(status=IncidentStatus.PENDING_REVIEW))
+    response = client.post("/incidents/inc_a/accept", json={"staff_id": "cuid_d4"})
+    assert response.status_code == 202
+    assert bridge.actions[0].action is CaregiverActionType.ACCEPT
+    # Sigue en la lista de activos: un cuidador tiene que revisarlo.
+    assert [i["status"] for i in client.get("/incidents").json()] == ["pending_review"]
+
+
 def test_action_while_bus_is_down_is_503(client: TestClient, bridge: FakeBridge) -> None:
     push(client, make_update())
     bridge.connected = False

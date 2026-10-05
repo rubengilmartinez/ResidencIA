@@ -8,6 +8,10 @@ estado de un incidente. El LLM no interviene aquí.
 
 - **Reglas** (`rules.py`): cada tipo de evento tiene categoría, prioridad y título fijos.
   `fall_suspected` → alta; `fall_confirmed` → **siempre crítica**, diga lo que diga el módulo.
+  `fall_dismissed` (falsa alarma) es una regla de *retirada*: nunca abre incidentes; un
+  incidente no crítico pasa a `pending_review` (prioridad baja, sin escalado, lo cierra un
+  cuidador) y uno crítico solo recibe la nota. Ver
+  [docs/decisions/0006-fall-false-alarm.md](../../docs/decisions/0006-fall-false-alarm.md).
 - **Fusión** (`engine.py`): eventos de la misma categoría y zona dentro de `FUSION_WINDOW_S`
   forman un único incidente. Si llega uno de más prioridad, el incidente sube de prioridad.
 - **Escalado** (`engine.py`): cuidadores de la zona → cuidadores de la planta → todo el

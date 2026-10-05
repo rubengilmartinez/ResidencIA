@@ -12,6 +12,7 @@ esperados se calculan con la misma configuración que el orquestador.
 | `test_simultaneous_accepts_first_one_wins` | Dos aceptaciones seguidas: gana la primera |
 | `test_duplicate_delivery_creates_a_single_incident` | Un evento entregado dos veces crea un solo incidente |
 | `test_malformed_messages_are_dropped_and_service_keeps_working` | Mensajes corruptos o incoherentes se descartan y el servicio sigue funcionando |
+| `test_false_alarm_stops_escalation_and_asks_for_review` | Una falsa alarma del detector detiene el escalado y deja el incidente pendiente de revisión |
 | `test_orchestrator_restart_resumes_open_incidents` | Tras reiniciar el orquestador, el incidente abierto sigue escalando |
 
 ## Contra el sistema real (Docker)

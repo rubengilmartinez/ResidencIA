@@ -33,6 +33,6 @@ Elegidas por el usuario: **1a** y **2b**.
 - El cuidador recibe aviso en cuanto se detecta la caída, sin esperar a la inmovilidad.
 - Al subir a crítica se aplican los plazos críticos desde el inicio de la etapa actual, así que
   el escalado puede producirse en ese mismo instante (ver 0004).
-- **Pendiente de decidir:** si el detector debe publicar algo cuando una sospecha no se
-  confirma (la persona se levanta). Ahora mismo el incidente queda abierto en prioridad alta
-  hasta que un cuidador lo atiende, que es la opción conservadora.
+- ~~Pendiente de decidir~~: qué ocurre cuando una sospecha no se confirma (la persona se
+  levanta). Decidido en [0006](0006-fall-false-alarm.md): el detector publica
+  `fall_dismissed` y el incidente deja de escalar y queda pendiente de revisión.

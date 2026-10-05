@@ -30,6 +30,10 @@ Mensajes del WebSocket:
 
 Cada incidente lleva `version`: el cliente debe quedarse con la más alta.
 
+Estados de un incidente: `open` (avisando y escalando), `pending_review` (falsa alarma del
+detector: sin escalado, revisar cuando se pueda), `accepted` y `resolved`. Se puede aceptar un
+incidente `open` o `pending_review`.
+
 **Limitación conocida:** no hay autenticación; el `staff_id` se confía al cliente. Es aceptable
 en la simulación local, no en un despliegue real.
 

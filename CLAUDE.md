@@ -87,6 +87,7 @@ Todos los módulos publican este formato. Los campos comunes son obligatorios; `
 - `severity_hint` es una sugerencia del módulo; la prioridad final la decide el orquestador.
 - `location.floor_id` debe coincidir con la planta del tema MQTT y con la configuración; el orquestador descarta los eventos incoherentes.
 - El detector de caídas publica dos eventos: `fall_suspected` al detectar la caída (prioridad alta) y `fall_confirmed` tras comprobar la inmovilidad (siempre crítica). El orquestador los fusiona en un solo incidente. Ver `docs/decisions/0003`.
+- Si la persona se levanta antes de confirmarse, el detector publica `fall_dismissed` (falsa alarma). Nunca abre incidentes. Un incidente no crítico deja de escalar, baja a prioridad baja y queda en `pending_review` hasta que un cuidador lo revisa y lo cierra. Una caída ya confirmada no se anula: solo se informa. Ver `docs/decisions/0006`.
 - Define el esquema una sola vez como modelo Pydantic en un paquete compartido (`shared/`) y reutilízalo en todos los servicios. No dupliques definiciones.
 
 ### Residencia de ejemplo
