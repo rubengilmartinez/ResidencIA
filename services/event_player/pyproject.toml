@@ -1,0 +1,22 @@
+[project]
+name = "residencia-event-player"
+version = "0.1.0"
+description = "Reproduce escenarios de eventos pregrabados y los publica en MQTT como lo haría un módulo de IA."
+requires-python = ">=3.11"
+dependencies = [
+    "residencia-shared",
+    "paho-mqtt>=2.1",
+]
+
+[project.scripts]
+event-player = "event_player.__main__:main"
+
+[tool.uv.sources]
+residencia-shared = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "event_player"

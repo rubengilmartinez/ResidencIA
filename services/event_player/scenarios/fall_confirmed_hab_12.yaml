@@ -1,0 +1,17 @@
+name: fall_confirmed_hab_12
+description: >
+  Caída en la habitación 12 (planta 1). El detector la marca como sospechosa al instante
+  y la confirma 12 s después, tras comprobar que la persona sigue inmóvil.
+steps:
+  - at_s: 0
+    event_type: fall_suspected
+    zone_id: hab_12
+    confidence: 0.84
+    severity_hint: high
+  - at_s: 12
+    event_type: fall_confirmed
+    zone_id: hab_12
+    confidence: 0.91
+    severity_hint: critical
+    payload:
+      immobile_seconds: 10

@@ -1,0 +1,10 @@
+name: fall_suspected_comedor
+description: >
+  Posible caída en el comedor que no llega a confirmarse (la persona se levanta). Genera
+  una alerta de prioridad alta, no crítica.
+steps:
+  - at_s: 0
+    event_type: fall_suspected
+    zone_id: comedor
+    confidence: 0.67
+    severity_hint: high

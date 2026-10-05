@@ -1,0 +1,21 @@
+name: duplicate_delivery_hab_05
+description: >
+  El mismo evento llega dos veces (MQTT con QoS 1 garantiza "al menos una vez"). El
+  orquestador debe crear un único incidente.
+steps:
+  - at_s: 0
+    event_type: fall_confirmed
+    zone_id: hab_05
+    confidence: 0.88
+    severity_hint: critical
+    payload:
+      immobile_seconds: 15
+    event_id: evt_duplicate0001
+  - at_s: 0.5
+    event_type: fall_confirmed
+    zone_id: hab_05
+    confidence: 0.88
+    severity_hint: critical
+    payload:
+      immobile_seconds: 15
+    event_id: evt_duplicate0001
