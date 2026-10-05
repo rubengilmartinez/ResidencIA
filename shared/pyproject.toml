@@ -1,0 +1,18 @@
+[project]
+name = "residencia-shared"
+version = "0.1.0"
+description = "Esquema común de eventos, mensajes internos, temas MQTT, configuración y logging."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    # Windows no trae base de datos de zonas horarias; zoneinfo la necesita.
+    "tzdata>=2024.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "residencia_shared"
