@@ -133,7 +133,7 @@ Es el módulo más crítico y por el que empezamos. Objetivo: un detector robust
 
 Líneas de trabajo:
 - **Modelo de pose**: partimos de YOLO pose, pero hay que comparar alternativas (RTMPose y otras) en precisión y velocidad sobre la RTX 3050 antes de decidir. Esta comparativa se hace **paso a paso con el usuario**, que quiere aprender cómo funciona cada modelo: explica y propone cada paso antes de ejecutarlo, no la resuelvas de una vez.
-- **Datasets**: búsqueda exhaustiva de datasets públicos de caídas y actividades de la vida diaria. Para cada uno, documentar: número de caídas y de actividades de control, puntos de vista de cámara, perfil de los sujetos y licencia. Inventario verificado en `docs/datasets/fall_datasets.md`.
+- **Datasets**: búsqueda exhaustiva de datasets públicos de caídas y actividades de la vida diaria. Para cada uno, documentar: número de caídas y de actividades de control, puntos de vista de cámara, perfil de los sujetos y licencia. Inventario verificado en `docs/datasets/fall_datasets.md`. **Entrenamiento del clasificador: solo SAFER-Activities**; el resto de datasets abiertos, solo como test entre datasets (`docs/decisions/0007`).
 - **Generalización**: el objetivo es invarianza a apariencia, posición, escala y, sobre todo, punto de vista.
   - Normaliza los esqueletos (centrar en la cadera, escalar por la longitud del torso).
   - Usa aumento de datos con rotaciones de los esqueletos para simular distintas posiciones de cámara (en residencias suelen ser altas y en ángulo).

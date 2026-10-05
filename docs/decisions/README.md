@@ -12,3 +12,4 @@ se añade una nueva que la sustituye y se marca la antigua como "Sustituida por 
 | [0004](0004-escalation-policy.md) | Política de escalado | Aceptada |
 | [0005](0005-development-environment.md) | Entorno de desarrollo: Docker Desktop con WSL2, fuera de OneDrive | Aceptada |
 | [0006](0006-fall-false-alarm.md) | Falsa alarma del detector de caídas | Aceptada |
+| [0007](0007-fall-classifier-datasets.md) | Datasets del clasificador de caídas: entrenar solo con SAFER-Activities | Aceptada |

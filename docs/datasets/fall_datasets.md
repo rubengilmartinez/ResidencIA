@@ -167,6 +167,11 @@ evaluación, siempre bajo el acuerdo correspondiente.
 
 ## Protocolo de evaluación propuesto (para discutir)
 
+> **Actualización (2026-10-06):** se decidió entrenar **solo con SAFER-Activities**, y los
+> demás datasets quedan para test entre datasets. Ver
+> [docs/decisions/0007](../decisions/0007-fall-classifier-datasets.md). La propuesta de abajo
+> se conserva como referencia por si hay que ampliar el entrenamiento.
+
 1. **Entrenamiento:** SAFER-Activities + CMDFall + UP-Fall + CAUCAFall + GMDCSA-24 +
    OF-Synthetic (y NTU como negativos, si la licencia lo permite).
 2. **Validación cruzada dejando un dataset fuera** con los datasets de OmniFall, usando sus
@@ -189,6 +194,9 @@ evaluación, siempre bajo el acuerdo correspondiente.
    La tienen OmniFall (segmentos con inicio y fin), SAFER, CMDFall y Le2i.
 
 ## Acciones pendientes (requieren al usuario)
+
+> Tras la decisión [0007](../decisions/0007-fall-classifier-datasets.md), solo es necesaria
+> la solicitud de **SAFER-Activities**. El resto queda como opción futura.
 
 Solicitudes de acceso a nombre del usuario, por orden de prioridad:
 
