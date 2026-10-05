@@ -1,0 +1,22 @@
+[project]
+name = "residencia-backend"
+version = "0.1.0"
+description = "Backend API: entrega las alertas a los cuidadores (WebSocket) y recoge sus acciones (REST)."
+requires-python = ">=3.11"
+dependencies = [
+    "residencia-shared",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "aiomqtt>=2.3",
+    "pydantic-settings>=2.5",
+]
+
+[tool.uv.sources]
+residencia-shared = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "backend"
