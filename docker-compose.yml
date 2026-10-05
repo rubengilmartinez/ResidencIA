@@ -1,0 +1,116 @@
+# Sistema completo de la simulación.
+#
+#   cp .env.example .env            # y cambia la contraseña
+#   docker compose up -d --build --wait
+#   docker compose run --rm event_player /scenarios/fall_suspected_comedor.yaml
+#
+# Los puertos se publican solo en 127.0.0.1: el broker no tiene autenticación todavía.
+
+name: residencia
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      # $SYS/broker/version es un mensaje retenido: llega en cuanto el broker acepta clientes.
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/broker/version", "-C", "1", "-W", "3"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Define POSTGRES_USER en .env (copia .env.example)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env (copia .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:?Define POSTGRES_DB en .env (copia .env.example)}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      STORE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      CONFIG_DIR: /config
+      HEARTBEAT_FILE: /tmp/orchestrator.heartbeat
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./config:/config:ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Sano solo si el bucle de escalado está vivo y conectado a MQTT (latido reciente).
+      test: ["CMD", "python", "-m", "orchestrator.healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: services/backend/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      CONFIG_DIR: /config
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./config:/config:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      # Sano solo si responde y está conectado al bus interno.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; r=urllib.request.urlopen('http://localhost:8000/health', timeout=2); sys.exit(0 if json.load(r)['mqtt_connected'] else 1)"
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Herramienta: reproduce escenarios de eventos. No arranca con "up"; se usa con "run".
+  event_player:
+    build:
+      context: .
+      dockerfile: services/event_player/Dockerfile
+    profiles: ["tools"]
+    environment:
+      MQTT_HOST: mosquitto
+      CONFIG_DIR: /config
+    volumes:
+      - ./config:/config:ro
+      - ./services/event_player/scenarios:/scenarios:ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+volumes:
+  mosquitto-data:
+  postgres-data:

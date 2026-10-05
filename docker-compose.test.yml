@@ -1,0 +1,11 @@
+# Ajustes para los tests de extremo a extremo: plazos de escalado cortos y tick rápido.
+# Se combina con docker-compose.yml (ver tests/e2e/README.md):
+#   docker compose -p residencia-test -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
+
+services:
+  orchestrator:
+    environment:
+      ESCALATION_CONFIG: /config-test/escalation.yaml
+      TICK_INTERVAL_S: "0.2"
+    volumes:
+      - ./tests/e2e/config:/config-test:ro
