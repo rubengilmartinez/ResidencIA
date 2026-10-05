@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Secretos
+.env
+
+# Privacidad por diseño: nunca se versiona vídeo ni audio.
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wav
+*.mp3
+*.flac
+
+# Datos y pesos de modelos (se descargan o generan con los scripts de ml/)
+data/
+ml/datasets/raw/
+ml/datasets/processed/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.gguf
+*.safetensors
+*.npz
+*.npy
+
+# Editor y herramientas
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.qodo/
+.DS_Store
+Thumbs.db

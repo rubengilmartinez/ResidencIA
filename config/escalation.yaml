@@ -1,0 +1,17 @@
+# Plazos de escalado, en segundos.
+#
+# Cada plazo cuenta desde que se envía la alerta de esa etapa:
+#   etapa 1: cuidadores responsables de la zona
+#     -> si nadie acepta en zone_caregiver, etapa 2: todos los cuidadores de la planta
+#     -> si nadie acepta en floor, etapa 3: todo el personal de turno y el supervisor
+#        (sin plazo: sigue activa hasta que alguien acepte).
+# Si una etapa no añade a nadie nuevo (p. ej. de noche hay un solo cuidador por planta),
+# se salta y se pasa directamente a la siguiente.
+
+zone_caregiver:
+  normal_s: 30
+  critical_s: 10
+
+floor:
+  normal_s: 60
+  critical_s: 30

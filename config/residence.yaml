@@ -1,0 +1,45 @@
+# Residencia de ejemplo para la simulación.
+#
+# Los identificadores de planta y zona aparecen en los temas MQTT
+# (residencia/{planta}/{zona}/{modulo}), así que solo admiten minúsculas, dígitos y "_",
+# y cada zona tiene un id único en toda la residencia.
+#
+# Supuestos de la simulación (ajústalos a la residencia real):
+# - Habitaciones de la planta baja: hab_01..hab_08; de la planta 1: hab_11..hab_18.
+# - Comedor, sala de estar y jardín en la planta baja; baños comunes en ambas plantas.
+# - Residentes encamados en hab_03, hab_07, hab_14 y hab_17.
+
+name: Residencia de ejemplo
+timezone: Europe/Madrid
+
+floors:
+  - id: p0
+    name: Planta baja
+    zones:
+      - { id: hab_01, name: Habitación 1, type: room }
+      - { id: hab_02, name: Habitación 2, type: room }
+      - { id: hab_03, name: Habitación 3, type: room, bedridden: true }
+      - { id: hab_04, name: Habitación 4, type: room }
+      - { id: hab_05, name: Habitación 5, type: room }
+      - { id: hab_06, name: Habitación 6, type: room }
+      - { id: hab_07, name: Habitación 7, type: room, bedridden: true }
+      - { id: hab_08, name: Habitación 8, type: room }
+      - { id: pasillo_p0, name: Pasillo de la planta baja, type: corridor }
+      - { id: comedor, name: Comedor, type: dining_room }
+      - { id: sala_estar, name: Sala de estar, type: living_room }
+      - { id: banos_p0, name: Baños comunes de la planta baja, type: bathroom }
+      - { id: jardin, name: Jardín, type: garden }
+
+  - id: p1
+    name: Planta 1
+    zones:
+      - { id: hab_11, name: Habitación 11, type: room }
+      - { id: hab_12, name: Habitación 12, type: room }
+      - { id: hab_13, name: Habitación 13, type: room }
+      - { id: hab_14, name: Habitación 14, type: room, bedridden: true }
+      - { id: hab_15, name: Habitación 15, type: room }
+      - { id: hab_16, name: Habitación 16, type: room }
+      - { id: hab_17, name: Habitación 17, type: room, bedridden: true }
+      - { id: hab_18, name: Habitación 18, type: room }
+      - { id: pasillo_p1, name: Pasillo de la planta 1, type: corridor }
+      - { id: banos_p1, name: Baños comunes de la planta 1, type: bathroom }

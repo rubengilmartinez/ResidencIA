@@ -1,0 +1,67 @@
+[project]
+name = "residencia"
+version = "0.1.0"
+description = "Sistema de monitorización inteligente para residencias de mayores (simulación de extremo a extremo)."
+requires-python = ">=3.11"
+dependencies = []
+
+# Entorno de desarrollo único: instala todos los paquetes del workspace en modo editable
+# más las herramientas de test y lint. Cada servicio instala solo lo suyo en su imagen Docker.
+[dependency-groups]
+dev = [
+    "residencia-shared",
+    "residencia-orchestrator",
+    "residencia-backend",
+    "residencia-event-player",
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "httpx2>=2.13",
+    "websockets>=13.0",
+]
+
+[tool.uv]
+# La raíz es un workspace virtual: no se construye como paquete.
+package = false
+
+[tool.uv.workspace]
+members = [
+    "shared",
+    "services/orchestrator",
+    "services/backend",
+    "services/event_player",
+]
+
+[tool.uv.sources]
+residencia-shared = { workspace = true }
+residencia-orchestrator = { workspace = true }
+residencia-backend = { workspace = true }
+residencia-event-player = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF",
+    "ANN",    # tipado obligatorio en todas las funciones
+    "ASYNC",
+    "PT",
+    "DTZ",    # prohíbe datetimes sin zona horaria
+]
+ignore = [
+    "ANN401",  # payload de eventos es dict[str, Any] por diseño
+]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib -m 'not e2e'"
+testpaths = [
+    "shared/tests",
+    "services/orchestrator/tests",
+    "services/backend/tests",
+    "services/event_player/tests",
+    "tests/e2e",
+]
+markers = [
+    "e2e: prueba de extremo a extremo contra el sistema levantado (ver tests/e2e/README.md)",
+]
