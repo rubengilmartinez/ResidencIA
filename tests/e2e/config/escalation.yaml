@@ -1,0 +1,9 @@
+# Plazos acortados para los tests de extremo a extremo (misma semántica que
+# config/escalation.yaml, pero en segundos de un solo dígito para que la batería sea rápida).
+zone_caregiver:
+  normal_s: 2.0
+  critical_s: 1.0
+
+floor:
+  normal_s: 3.0
+  critical_s: 2.0
