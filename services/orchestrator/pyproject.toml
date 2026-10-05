@@ -1,0 +1,21 @@
+[project]
+name = "residencia-orchestrator"
+version = "0.1.0"
+description = "Agente orquestador: motor de reglas determinista, fusión de eventos y escalado de alertas."
+requires-python = ">=3.11"
+dependencies = [
+    "residencia-shared",
+    "aiomqtt>=2.3",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.5",
+]
+
+[tool.uv.sources]
+residencia-shared = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "orchestrator"
