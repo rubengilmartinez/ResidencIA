@@ -131,8 +131,8 @@ Todos los módulos publican este formato. Los campos comunes son obligatorios; `
 Es el módulo más crítico y por el que empezamos. Objetivo: un detector robusto que **minimice los falsos positivos** sin sacrificar la detección de caídas reales.
 
 Líneas de trabajo:
-- **Modelo de pose**: partimos de YOLO pose, pero hay que comparar alternativas (RTMPose y otras) en precisión y velocidad sobre la RTX 3050 antes de decidir.
-- **Datasets**: búsqueda exhaustiva de datasets públicos de caídas y actividades de la vida diaria. Para cada uno, documentar: número de caídas y de actividades de control, puntos de vista de cámara, perfil de los sujetos y licencia.
+- **Modelo de pose**: partimos de YOLO pose, pero hay que comparar alternativas (RTMPose y otras) en precisión y velocidad sobre la RTX 3050 antes de decidir. Esta comparativa se hace **paso a paso con el usuario**, que quiere aprender cómo funciona cada modelo: explica y propone cada paso antes de ejecutarlo, no la resuelvas de una vez.
+- **Datasets**: búsqueda exhaustiva de datasets públicos de caídas y actividades de la vida diaria. Para cada uno, documentar: número de caídas y de actividades de control, puntos de vista de cámara, perfil de los sujetos y licencia. Inventario verificado en `docs/datasets/fall_datasets.md`.
 - **Generalización**: el objetivo es invarianza a apariencia, posición, escala y, sobre todo, punto de vista.
   - Normaliza los esqueletos (centrar en la cadera, escalar por la longitud del torso).
   - Usa aumento de datos con rotaciones de los esqueletos para simular distintas posiciones de cámara (en residencias suelen ser altas y en ángulo).
@@ -147,6 +147,7 @@ Líneas de trabajo:
 - **Desarrollo vertical**: prioriza tener un flujo completo de extremo a extremo funcionando, aunque cada parte sea básica, antes de perfeccionar un módulo aislado.
 - **No tomes decisiones de arquitectura por tu cuenta**. Si algo de este documento parece mejorable, propón el cambio y explica por qué, pero no lo apliques sin aprobación.
 - **Verifica lo que haces**: ejecuta los tests y comprueba que el código funciona antes de darlo por terminado. Si no puedes verificar algo, dilo claramente.
+- **Estrategia de tests (fijada por el usuario, mantenla)**: tests unitarios con pytest del esquema, los temas, la configuración, las reglas y el escalado, siempre deterministas (el escalado se prueba con reloj simulado, sin esperas reales); y una prueba completa con `docker compose` y plazos acortados en un YAML de test (`tests/e2e/`).
 - **Sé honesto con los resultados**: no infles métricas, señala el sobreajuste y los casos de fallo. En un sistema de cuidado de personas, un resultado optimista y falso es peor que uno modesto y real.
 - Si una información (por ejemplo, el rendimiento de un modelo o las características de un dataset) puede haber cambiado o no estás seguro, búscala o indícalo en lugar de suponer.
 
